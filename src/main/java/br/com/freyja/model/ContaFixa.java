@@ -9,7 +9,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "contaFixa")
+@Table(name = "conta_fixa")
 @Data
 public class ContaFixa {
     @Id

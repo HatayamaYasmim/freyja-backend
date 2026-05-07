@@ -9,6 +9,9 @@ import br.com.freyja.repository.ContaFixaRepository;
 import br.com.freyja.repository.GrupoRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.util.List;
+
 @Service
 public class ContaFixaService {
 
@@ -38,8 +41,18 @@ public class ContaFixaService {
         conta.setDataConta(dto.getDataConta());
         conta.setGastoRecorrente(dto.isGastoRecorrente());
         conta.setDescricao(dto.getDescricao());
+        conta.setStatusPagamento(
+                dto.getStatusPagamento() == null || dto.getStatusPagamento().isBlank()
+                        ? "F"
+                        : dto.getStatusPagamento()
+        );
 
         return contaFixaRepo.save(conta);
     }
 
+    public List<ContaFixa> listByMesGrupo(Long groupId, Integer mes, Integer ano) {
+        LocalDate inicio = LocalDate.of(ano, mes, 1);
+        LocalDate fim = inicio.withDayOfMonth(inicio.lengthOfMonth());
+        return  contaFixaRepo.findByGrupoIdAndDataContaBetween(groupId, inicio, fim);
+    }
 }

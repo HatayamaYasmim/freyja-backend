@@ -46,6 +46,9 @@ public class GastoCartaoService {
             g.setQuantidadeParcelas(n);
             g.setParcela(i);
             g.setStatus(status);
+            g.setDataCompra(req.getDataCompra());
+//            g.setOrigem(OrigemLancamento.MANUAL);
+            g.setIdExterno(null);
 
             // ajusta a diferença na 1ª parcela (padrão simples e comum)
             BigDecimal valorParcela = (i == 1) ? base.add(diff) : base;

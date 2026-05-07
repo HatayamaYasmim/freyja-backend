@@ -22,4 +22,5 @@ public class ContaFixaRequestDTO {
             LocalDate dataConta;
             boolean gastoRecorrente;
             String descricao;
+            String statusPagamento;
 }

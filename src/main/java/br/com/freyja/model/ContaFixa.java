@@ -46,5 +46,8 @@ public class ContaFixa {
     @Column
     private String descricao;
 
+    @Column(name = "status_pagamento", nullable = false, length = 1)
+    private String statusPagamento;
+
 
 }

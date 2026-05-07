@@ -1,6 +1,7 @@
 package br.com.freyja.controller;
 
 import br.com.freyja.dto.GastoCartaoDTO;
+import br.com.freyja.dto.GastoCartaoPreviewDTO;
 import br.com.freyja.model.GastoCartao;
 import br.com.freyja.service.GastoCartaoService;
 import jakarta.validation.Valid;
@@ -33,6 +34,4 @@ public class GastosCartaoController {
     ) {
         return ResponseEntity.ok(service.atualizar(id, dto));
     }
-
-
 }

@@ -1,9 +1,13 @@
 package br.com.freyja.service;
 
 import br.com.freyja.dto.GastoCartaoDTO;
+import br.com.freyja.dto.GastoCartaoPreviewDTO;
+import br.com.freyja.enums.OrigemImportacao;
 import br.com.freyja.model.Cartao;
+import br.com.freyja.model.Categoria;
 import br.com.freyja.model.GastoCartao;
 import br.com.freyja.repository.CartaoRepository;
+import br.com.freyja.repository.CategoriaRepository;
 import br.com.freyja.repository.GastosCartaoRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
@@ -17,10 +21,12 @@ import java.util.List;
 public class GastoCartaoService {
     private final GastosCartaoRepository gastoRepo;
     private final CartaoRepository cartaoRepo;
+    private final CategoriaRepository categoriaRepo;
 
-    public GastoCartaoService(GastosCartaoRepository gastoRepo, CartaoRepository cartaoRepo) {
+    public GastoCartaoService(GastosCartaoRepository gastoRepo, CartaoRepository cartaoRepo, CategoriaRepository categoriaRepo, CategoriaRepository categoriaRepo1) {
         this.gastoRepo = gastoRepo;
         this.cartaoRepo = cartaoRepo;
+        this.categoriaRepo = categoriaRepo1;
     }
 
     @Transactional
@@ -76,26 +82,44 @@ public class GastoCartaoService {
         return gastoRepo.save(g);
     }
 
-//
-//    public List<GastoCartao> listarPorCartao(Long cartaoId) {
-//        return gastoRepo.findByCartaoIdOrderByDataCriacaoDesc(cartaoId);
-//    }
-//
-//    @Transactional
-//    public GastoCartao atualizarStatus(Long gastoId, AtualizarStatusRequest req) {
-//        GastoCartao g = gastoRepo.findById(gastoId)
-//                .orElseThrow(() -> new IllegalArgumentException("Gasto não encontrado: " + gastoId));
-//
-//        g.setStatus(req.status());
-//        return gastoRepo.save(g);
-//    }
-//
-//    @Transactional
-//    public void deletar(Long gastoId) {
-//        if (!gastoRepo.existsById(gastoId)) {
-//            throw new IllegalArgumentException("Gasto não encontrado: " + gastoId);
-//        }
-//        gastoRepo.deleteById(gastoId);
-//    }
-//}
+
+    @Transactional
+    public List<GastoCartao> salvarImportacao(
+            Long cartaoId,
+            List<GastoCartaoPreviewDTO> itens
+    ) {
+        Cartao cartao = cartaoRepo.findById(cartaoId)
+                .orElseThrow(() -> new IllegalArgumentException("Cartão não encontrado: " + cartaoId));
+
+        List<GastoCartao> gastos = itens.stream()
+                .filter(GastoCartaoPreviewDTO::getImportar)
+                .filter(item -> item.getIdExterno() == null || !gastoRepo.existsByIdExterno(item.getIdExterno()))
+                .map(item -> {
+                    GastoCartao gasto = new GastoCartao();
+
+                    gasto.setCartao(cartao);
+                    gasto.setDataCompra(item.getDataCompra());
+                    gasto.setDescricao(item.getDescricao());
+                    gasto.setValor(item.getValor());
+                    gasto.setParcela(item.getParcela());
+                    gasto.setQuantidadeParcelas(item.getQuantidadeParcelas());
+                    gasto.setIdExterno(item.getIdExterno());
+                    gasto.setUsuario("admin"); //
+                    gasto.setStatus("A");
+                    gasto.setOrigem(OrigemImportacao.PDF);
+                    if (item.getCategoriaId() != null) {
+
+                        Categoria categoria = categoriaRepo.findById(item.getCategoriaId())
+                                .orElseThrow(() ->
+                                        new IllegalArgumentException("Categoria não encontrada"));
+
+                        gasto.setCategoria(categoria);
+                    }
+
+                    return gasto;
+                })
+                .toList();
+
+        return gastoRepo.saveAll(gastos);
+    }
 }

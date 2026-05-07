@@ -1,5 +1,6 @@
 package br.com.freyja.dto;
 
+import br.com.freyja.enums.OrigemImportacao;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -15,4 +16,6 @@ public class GastoCartaoPreviewDTO {
     private String idExterno;
     private Boolean importar = true;
     private Boolean duplicado = false;
+    private OrigemImportacao origem;
+    private Long categoriaId;
 }

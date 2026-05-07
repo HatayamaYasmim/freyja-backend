@@ -32,11 +32,22 @@ public class ImportacaoFaturaController {
         return ResponseEntity.ok(importacaoFaturaService.previewPDF(file));
     }
 
-//    @PostMapping("/confirmar/{cartaoId}")
-//    public ResponseEntity<List<GastoCartao>> confirmarImportacao(
-//            @PathVariable Long cartaoId,
-//            @RequestBody List<GastoCartaoPreviewDTO> itens
-//    ) {
-//        return ResponseEntity.ok(gastoCartaoService.salvarImportacao(cartaoId, itens));
-//    }
+    @PostMapping("/confirmar/{cartaoId}")
+    public ResponseEntity<?> confirmarImportacao(
+            @PathVariable Long cartaoId,
+            @RequestBody List<GastoCartaoPreviewDTO> itens
+    ) {
+        try {
+            return ResponseEntity.ok(
+                    gastoCartaoService.salvarImportacao(cartaoId, itens)
+            );
+        } catch (Exception e) {
+            e.printStackTrace();
+
+            return ResponseEntity
+                    .internalServerError()
+                    .body(e.getMessage());
+        }
+    }
+
 }

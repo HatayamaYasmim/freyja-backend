@@ -1,5 +1,6 @@
 package br.com.freyja.model;
 
+import br.com.freyja.enums.OrigemImportacao;
 import jakarta.persistence.*;
 import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
@@ -66,4 +67,12 @@ public class GastoCartao {
     // Evita import duplicado*
     @Column(name = "id_externo", length = 255)
     private String idExterno;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "origem", length = 20)
+    private OrigemImportacao origem;
+
+    @ManyToOne
+    @JoinColumn(name = "categoria_id")
+    private Categoria categoria;
 }

@@ -4,6 +4,7 @@ import jakarta.validation.constraints.*;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 @Data
 public class GastoCartaoDTO {
@@ -18,9 +19,12 @@ public class GastoCartaoDTO {
     @Min(value = 1, message = "Mínimo 1 parcela")
     private Integer quantidadeParcelas;
 
-    @Size(max = 255, message = "Descrição muito longa")
+    @Size(max = 500, message = "Descrição muito longa")
     private String descricao;
 
     @Pattern(regexp = "^[APC]$", message = "Status deve ser A, P ou C")
     private String status; // se null → service define como "A"
+
+    @NotNull(message = "Data da compra é obrigatória")
+    private LocalDate dataCompra;
 }

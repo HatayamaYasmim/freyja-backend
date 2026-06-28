@@ -27,4 +27,7 @@ public class GastoCartaoDTO {
 
     @NotNull(message = "Data da compra é obrigatória")
     private LocalDate dataCompra;
+
+    private Long categoria;
+
 }

@@ -2,6 +2,7 @@ package br.com.freyja.service;
 
 import br.com.freyja.dto.GastoCartaoDTO;
 import br.com.freyja.dto.GastoCartaoPreviewDTO;
+import br.com.freyja.dto.GastoCartaoResponseDTO;
 import br.com.freyja.enums.OrigemImportacao;
 import br.com.freyja.model.Cartao;
 import br.com.freyja.model.Categoria;
@@ -30,7 +31,7 @@ public class GastoCartaoService {
     }
 
     @Transactional
-    public List<GastoCartao> parcelar(Long cartaoId, GastoCartaoDTO req) {
+    public List<GastoCartao> cadastrar(Long cartaoId, GastoCartaoDTO req) {
         Cartao cartao = cartaoRepo.findById(cartaoId)
                 .orElseThrow(() -> new IllegalArgumentException("Cartão não encontrado: " + cartaoId));
         int n = req.getQuantidadeParcelas();
@@ -53,7 +54,12 @@ public class GastoCartaoService {
             g.setParcela(i);
             g.setStatus(status);
             g.setDataCompra(req.getDataCompra());
-//            g.setOrigem(OrigemLancamento.MANUAL);
+            g.setOrigem(OrigemImportacao.MANUAL);
+            if (req.getCategoria() != null) {
+                Categoria categoria = categoriaRepo.findById(req.getCategoria())
+                        .orElseThrow(() -> new IllegalArgumentException("Categoria não encontrada"));
+                g.setCategoria(categoria);
+            }
             g.setIdExterno(null);
 
             // ajusta a diferença na 1ª parcela (padrão simples e comum)
@@ -121,5 +127,31 @@ public class GastoCartaoService {
                 .toList();
 
         return gastoRepo.saveAll(gastos);
+    }
+
+    public List<GastoCartaoResponseDTO> listarPorFatura(
+            Long cartaoId,
+            Integer mes,
+            Integer ano,
+            Long categoriaId
+    ) {
+        return gastoRepo.buscarPorFatura(cartaoId, mes, ano, categoriaId)
+                .stream()
+                .map(g -> new GastoCartaoResponseDTO(
+                        g.getId(),
+                        g.getDataCompra(),
+                        g.getDescricao(),
+                        g.getValor(),
+                        g.getParcela(),
+                        g.getQuantidadeParcelas(),
+                        g.getStatus(),
+                        g.getCategoria() != null ? g.getCategoria().getId() : null,
+                        g.getCategoria() != null ? g.getCategoria().getNome() : null
+                ))
+                .toList();
+    }
+
+    public BigDecimal buscarTotalMes(Long cartaoId, Integer mes, Integer ano) {
+        return gastoRepo.somarTotalPorMes(cartaoId, mes, ano);
     }
 }

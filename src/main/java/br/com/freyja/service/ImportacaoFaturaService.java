@@ -1,6 +1,7 @@
 package br.com.freyja.service;
 
 import br.com.freyja.dto.GastoCartaoPreviewDTO;
+import br.com.freyja.enums.OrigemImportacao;
 import br.com.freyja.repository.GastosCartaoRepository;
 import org.apache.pdfbox.Loader;
 import org.springframework.stereotype.Service;
@@ -156,6 +157,98 @@ public class ImportacaoFaturaService {
         return descricao == null
                 ? ""
                 : descricao.trim().replaceAll("\\s+", " ").toUpperCase();
+    }
+
+    public List<GastoCartaoPreviewDTO> previewOFX(MultipartFile file) {
+        try {
+            String texto = new String(file.getBytes(), StandardCharsets.UTF_8);
+            return extrairComprasOFX(texto);
+        } catch (IOException e) {
+            throw new RuntimeException("Erro ao ler OFX", e);
+        }
+
+
+    }
+
+    private List<GastoCartaoPreviewDTO> extrairComprasOFX(String texto) {
+        List<GastoCartaoPreviewDTO> itens = new ArrayList<>();
+
+        Pattern transacaoPattern = Pattern.compile(
+                "<STMTTRN>(.*?)</STMTTRN>",
+                Pattern.DOTALL
+        );
+
+        Matcher transacoes = transacaoPattern.matcher(texto);
+
+        while (transacoes.find()) {
+            String bloco = transacoes.group(1);
+
+            String tipo = extrairTag(bloco, "TRNTYPE");
+            String dataTexto = extrairTag(bloco, "DTPOSTED");
+            String valorTexto = extrairTag(bloco, "TRNAMT");
+            String fitId = extrairTag(bloco, "FITID");
+            String descricao = extrairTag(bloco, "MEMO");
+
+            if (descricao == null || descricao.isBlank()) {
+                descricao = extrairTag(bloco, "NAME");
+            }
+
+            if (dataTexto == null || valorTexto == null) {
+                continue;
+            }
+
+            BigDecimal valor = new BigDecimal(valorTexto.trim()).abs();
+
+            LocalDate dataCompra = LocalDate.parse(
+                    dataTexto.substring(0, 8),
+                    java.time.format.DateTimeFormatter.BASIC_ISO_DATE
+            );
+
+            String idExterno = fitId != null && !fitId.isBlank()
+                    ? "OFX-" + fitId
+                    : gerarIdExterno(dataCompra, descricao, valor, 1, 1);
+
+            GastoCartaoPreviewDTO dto = new GastoCartaoPreviewDTO();
+            dto.setDataCompra(dataCompra);
+            dto.setDescricao(descricao);
+            dto.setValor(valor);
+            dto.setParcela(1);
+            dto.setQuantidadeParcelas(1);
+            dto.setIdExterno(idExterno);
+
+            boolean duplicado = gastoRepo.existsByIdExterno(idExterno);
+            dto.setDuplicado(duplicado);
+            dto.setImportar(!duplicado);
+
+            itens.add(dto);
+        }
+
+        return itens;
+    }
+
+    private String extrairTag(String bloco, String tag) {
+        Pattern pattern = Pattern.compile("<" + tag + ">([^<\\r\\n]+)");
+        Matcher matcher = pattern.matcher(bloco);
+
+        if (matcher.find()) {
+            return matcher.group(1).trim();
+        }
+
+        return null;
+    }
+
+    public List<GastoCartaoPreviewDTO> preview(
+            MultipartFile file,
+            OrigemImportacao tipoImportacao
+    ) {
+        return switch (tipoImportacao) {
+            case PDF -> previewPDF(file);
+            case OFX -> previewOFX(file);
+//            case XLSX -> previewXLSX(file);
+            default -> throw new IllegalArgumentException(
+                    "Tipo de importação não suportado: " + tipoImportacao
+            );
+        };
     }
 
 }

@@ -1,6 +1,7 @@
 package br.com.freyja.controller;
 
 import br.com.freyja.dto.GastoCartaoPreviewDTO;
+import br.com.freyja.enums.OrigemImportacao;
 import br.com.freyja.model.GastoCartao;
 import br.com.freyja.service.GastoCartaoService;
 import br.com.freyja.service.ImportacaoFaturaService;
@@ -25,11 +26,21 @@ public class ImportacaoFaturaController {
         this.gastoCartaoService = gastoCartaoService;
     }
 
-    @PostMapping("/preview-pdf")
-    public ResponseEntity<List<GastoCartaoPreviewDTO>> previewPDF(
-            @RequestParam("file") MultipartFile file
+//    @PostMapping("/preview-pdf")
+//    public ResponseEntity<List<GastoCartaoPreviewDTO>> previewPDF(
+//            @RequestParam("file") MultipartFile file
+//    ) {
+//        return ResponseEntity.ok(importacaoFaturaService.previewPDF(file));
+//    }
+
+    @PostMapping("/preview")
+    public ResponseEntity<List<GastoCartaoPreviewDTO>> preview(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam OrigemImportacao tipoImportacao
     ) {
-        return ResponseEntity.ok(importacaoFaturaService.previewPDF(file));
+        return ResponseEntity.ok(
+                importacaoFaturaService.preview(file, tipoImportacao)
+        );
     }
 
     @PostMapping("/confirmar/{cartaoId}")

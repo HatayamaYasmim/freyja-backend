@@ -1,17 +1,25 @@
-version: "3.9"
-
 services:
   db:
     image: postgres:16
     container_name: freyja-postgres
+    restart: unless-stopped
+
     environment:
       POSTGRES_DB: freyja_finance
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Defina DB_PASSWORD no arquivo .env}
+
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
+
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - freyja_dev_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d freyja_finance"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
-  postgres_data:
+  freyja_dev_data:

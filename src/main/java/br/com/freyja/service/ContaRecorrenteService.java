@@ -57,14 +57,14 @@ public class ContaRecorrenteService {
 
     @Transactional(readOnly = true)
     public List<ContaRecorrenteResponseDTO> listarPorGrupo(Long grupoId) {
-        return repository.findByGroupId(grupoId)
+        return repository.findByGrupo_Id(grupoId)
                 .stream()
                 .map(this::converterResponse)
                 .toList();
     }
 
     @Transactional(readOnly = true)
-    public ContaRecorrenteResponseDTO buscarPorId(Long id) {
+    public ContaRecorrenteResponseDTO findByGrupo_Id(Long id) {
         ContaRecorrente conta = repository.findById(id)
                 .orElseThrow(() ->
                         new IllegalArgumentException(

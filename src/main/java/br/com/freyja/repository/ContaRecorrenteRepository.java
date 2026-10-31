@@ -9,5 +9,5 @@ import java.util.List;
 
 @Repository
 public interface ContaRecorrenteRepository extends JpaRepository<ContaRecorrente, Long> {
-    List<ContaRecorrente> findByGroupId(Long grupoId);
+    List<ContaRecorrente> findByGrupo_Id(Long grupoId);
 }

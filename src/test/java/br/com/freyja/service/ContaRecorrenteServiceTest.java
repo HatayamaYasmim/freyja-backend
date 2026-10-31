@@ -217,7 +217,7 @@ class ContaRecorrenteServiceTest {
                 .thenReturn(Optional.of(criarEntidade()));
 
         ContaRecorrenteResponseDTO resultado =
-                service.buscarPorId(1L);
+                service.findByGrupo_Id(1L);
 
         assertEquals(1L, resultado.id());
         assertEquals("Internet", resultado.descricao());
@@ -227,7 +227,7 @@ class ContaRecorrenteServiceTest {
 
     @Test
     void deveListarContasPorGrupo() {
-        when(repository.findByGroupId(1L))
+        when(repository.findByGrupo_Id(1L))
                 .thenReturn(List.of(criarEntidade()));
 
         List<ContaRecorrenteResponseDTO> resultado =
@@ -237,7 +237,7 @@ class ContaRecorrenteServiceTest {
         assertEquals("Internet",
                 resultado.get(0).descricao());
 
-        verify(repository).findByGroupId(1L);
+        verify(repository).findByGrupo_Id(1L);
     }
 
 }

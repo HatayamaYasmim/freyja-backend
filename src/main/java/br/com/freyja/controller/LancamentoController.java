@@ -120,4 +120,25 @@ public class LancamentoController {
     }
 
 
+    @PatchMapping("/{id}")
+    public ResponseEntity<LancamentoResponseDTO> atualizar(
+            @PathVariable @Positive Long id,
+            @Valid @RequestBody AtualizarLancamentoRequestDTO request
+    ) {
+        return ResponseEntity.ok(
+                lancamentoService.atualizar(id, request)
+        );
+    }
+
+    @PatchMapping("/{id}/cancelar")
+    public ResponseEntity<LancamentoResponseDTO> cancelar(
+            @PathVariable @Positive Long id
+    ) {
+        return ResponseEntity.ok(
+                lancamentoService.cancelar(id)
+        );
+    }
+
+
+
 }

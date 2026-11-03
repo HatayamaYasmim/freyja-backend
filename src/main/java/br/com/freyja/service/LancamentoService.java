@@ -316,5 +316,99 @@ public class LancamentoService {
         );
     }
 
+    @Transactional
+    public LancamentoResponseDTO atualizar(
+            Long id,
+            AtualizarLancamentoRequestDTO request
+    ) {
+        if (request == null) {
+            throw new IllegalArgumentException(
+                    "Os dados da atualização são obrigatórios"
+            );
+        }
+
+        Lancamento lancamento = lancamentoRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Lançamento não encontrado: " + id
+                ));
+
+        if (lancamento.getStatus() != Lancamento.StatusLancamento.PENDENTE) {
+            throw new BusinessConflictException(
+                    "Somente lançamentos pendentes podem ser editados"
+            );
+        }
+
+        if (request.descricao() != null) {
+            if (request.descricao().isBlank()) {
+                throw new IllegalArgumentException(
+                        "A descrição não pode ser vazia"
+                );
+            }
+
+            lancamento.setDescricao(request.descricao().trim());
+        }
+
+        if (request.categoriaId() != null) {
+            if (request.categoriaId() <= 0) {
+                throw new IllegalArgumentException(
+                        "O ID da categoria deve ser positivo"
+                );
+            }
+
+            Categoria categoria = categoriaRepository
+                    .findById(request.categoriaId())
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Categoria não encontrada: " + request.categoriaId()
+                    ));
+
+            lancamento.setCategoria(categoria);
+        }
+
+        if (request.valorPrevisto() != null) {
+            if (request.valorPrevisto().signum() <= 0) {
+                throw new IllegalArgumentException(
+                        "O valor previsto deve ser positivo"
+                );
+            }
+
+            lancamento.setValorPrevisto(request.valorPrevisto());
+        }
+
+        if (request.vencimento() != null) {
+            lancamento.setVencimento(request.vencimento());
+        }
+
+        if (request.observacoes() != null) {
+            lancamento.setObservacoes(request.observacoes());
+        }
+
+        Lancamento salvo = lancamentoRepository.save(lancamento);
+
+        return LancamentoResponseDTO.fromEntity(salvo);
+    }
+
+
+    @Transactional
+    public LancamentoResponseDTO cancelar(Long id) {
+        Lancamento lancamento = lancamentoRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Lançamento não encontrado: " + id
+                ));
+
+        if (lancamento.getStatus() != Lancamento.StatusLancamento.PENDENTE) {
+            throw new BusinessConflictException(
+                    "Somente lançamentos pendentes podem ser cancelados"
+            );
+        }
+
+        lancamento.setStatus(Lancamento.StatusLancamento.CANCELADO);
+
+        Lancamento salvo = lancamentoRepository.save(lancamento);
+
+        return LancamentoResponseDTO.fromEntity(salvo);
+    }
+
+
+
 
 }

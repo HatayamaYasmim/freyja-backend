@@ -1,10 +1,8 @@
 
 package br.com.freyja.controller;
 
-import br.com.freyja.dto.LancamentosRequestDTO;
-import br.com.freyja.dto.LancamentoResponseDTO;
-import br.com.freyja.dto.PagamentoRequestDTO;
-import br.com.freyja.dto.ResumoFinanceiroDTO;
+import br.com.freyja.dto.*;
+import br.com.freyja.dto.filtro.LancamentoFiltroDTO;
 import br.com.freyja.dto.filtro.PeriodoMensalFiltroDTO;
 import br.com.freyja.service.GeracaoLancamentosService;
 import br.com.freyja.service.LancamentoService;
@@ -17,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URI;
 import java.time.YearMonth;
 import java.util.List;
 
@@ -55,12 +54,15 @@ public class LancamentoController {
     @GetMapping("/grupo/{grupoId}")
     public ResponseEntity<List<LancamentoResponseDTO>> listarPorGrupo(
             @PathVariable @Positive Long grupoId,
-            @RequestParam
-            @DateTimeFormat(pattern = "yyyy-MM")
-            YearMonth mes
+            @Valid @ModelAttribute LancamentoFiltroDTO filtro
     ) {
         return ResponseEntity.ok(
-                lancamentoService.listarPorGrupo(grupoId, mes)
+                lancamentoService.listarPorGrupo(
+                        grupoId,
+                        filtro.mes(),
+                        filtro.categoriaId(),
+                        filtro.status()
+                )
         );
     }
 
@@ -86,6 +88,34 @@ public class LancamentoController {
                         grupoId,
                         filtro.mes()
                 )
+        );
+    }
+
+
+    @PostMapping
+    public ResponseEntity<LancamentoResponseDTO> cadastrarAvulso(
+            @Valid @RequestBody LancamentoAvulsoRequestDTO request
+    ) {
+        LancamentoResponseDTO response =
+                lancamentoService.cadastrarAvulso(request);
+
+        URI location = URI.create(
+                "/lancamentos/" + response.id()
+        );
+
+        return ResponseEntity
+                .created(location)
+                .body(response);
+    }
+
+
+    @GetMapping("/grupo/{grupoId}/resumo-anual")
+    public ResponseEntity<ResumoAnualDTO> obterResumoAnual(
+            @PathVariable @Positive Long grupoId,
+            @RequestParam Integer ano
+    ) {
+        return ResponseEntity.ok(
+                lancamentoService.obterResumoAnual(grupoId, ano)
         );
     }
 

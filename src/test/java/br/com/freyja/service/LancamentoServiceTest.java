@@ -2,6 +2,7 @@
 package br.com.freyja.service;
 
 import br.com.freyja.dto.AtualizarLancamentoRequestDTO;
+import br.com.freyja.dto.PagamentoRequestDTO;
 import br.com.freyja.exception.BusinessConflictException;
 import br.com.freyja.model.Categoria;
 import br.com.freyja.model.Grupo;
@@ -62,6 +63,7 @@ class LancamentoServiceTest {
         lancamento.setVencimento(LocalDate.of(2026, 11, 15));
         lancamento.setValorPrevisto(new BigDecimal("350.00"));
         lancamento.setStatus(Lancamento.StatusLancamento.PENDENTE);
+        lancamento.setVersion(0L);
     }
 
 
@@ -83,10 +85,10 @@ class LancamentoServiceTest {
 
         assertThrows(
                 BusinessConflictException.class,
-                () -> service.atualizar(4L, request)
+                () -> service.atualizar(4L, 0L, request)
         );
 
-        verify(lancamentoRepository, never()).save(any());
+        verify(lancamentoRepository, never()).saveAndFlush(any());
 
         assertEquals(
                 new BigDecimal("350.00"),
@@ -103,10 +105,10 @@ class LancamentoServiceTest {
 
         assertThrows(
                 BusinessConflictException.class,
-                () -> service.cancelar(4L)
+                () -> service.cancelar(4L, 0L)
         );
 
-        verify(lancamentoRepository, never()).save(any());
+        verify(lancamentoRepository, never()).saveAndFlush(any());
 
         assertEquals(
                 Lancamento.StatusLancamento.PAGO,
@@ -119,17 +121,106 @@ class LancamentoServiceTest {
         when(lancamentoRepository.findById(4L))
                 .thenReturn(Optional.of(lancamento));
 
-        when(lancamentoRepository.save(any(Lancamento.class)))
+        when(lancamentoRepository.saveAndFlush(any(Lancamento.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        service.cancelar(4L);
+        service.cancelar(4L, 0L);
 
         assertEquals(
                 Lancamento.StatusLancamento.CANCELADO,
                 lancamento.getStatus()
         );
 
-        verify(lancamentoRepository).save(lancamento);
+        verify(lancamentoRepository).saveAndFlush(lancamento);
         verify(lancamentoRepository, never()).delete(any());
     }
+
+
+    @Test
+    void naoDeveEditarLancamentoComVersaoDesatualizada() {
+        lancamento.setVersion(2L);
+
+        AtualizarLancamentoRequestDTO request =
+                new AtualizarLancamentoRequestDTO(
+                        "Novo nome",
+                        null,
+                        new BigDecimal("400.00"),
+                        null,
+                        null
+                );
+
+        when(lancamentoRepository.findById(4L))
+                .thenReturn(Optional.of(lancamento));
+
+        BusinessConflictException exception = assertThrows(
+                BusinessConflictException.class,
+                () -> service.atualizar(4L, 1L, request)
+        );
+
+        assertTrue(
+                exception.getMessage().contains("alterado")
+        );
+
+        verify(lancamentoRepository, never()).saveAndFlush(any());
+
+        assertEquals(
+                new BigDecimal("350.00"),
+                lancamento.getValorPrevisto()
+        );
+
+        assertEquals(2L, lancamento.getVersion());
+    }
+
+
+    @Test
+    void naoDeveCancelarComVersaoDesatualizada() {
+        lancamento.setVersion(2L);
+
+        when(lancamentoRepository.findById(4L))
+                .thenReturn(Optional.of(lancamento));
+
+        assertThrows(
+                BusinessConflictException.class,
+                () -> service.cancelar(4L, 1L)
+        );
+
+        assertEquals(
+                Lancamento.StatusLancamento.PENDENTE,
+                lancamento.getStatus()
+        );
+
+        verify(lancamentoRepository, never()).saveAndFlush(any());
+    }
+
+
+    @Test
+    void naoDevePagarComVersaoDesatualizada() {
+        lancamento.setVersion(2L);
+
+        PagamentoRequestDTO request = new PagamentoRequestDTO(
+                new BigDecimal("350.00"),
+                LocalDate.of(2026, 11, 15)
+        );
+
+        when(lancamentoRepository.findById(4L))
+                .thenReturn(Optional.of(lancamento));
+
+        assertThrows(
+                BusinessConflictException.class,
+                () -> service.registrarPagamento(4L, 1L, request)
+        );
+
+        assertEquals(
+                Lancamento.StatusLancamento.PENDENTE,
+                lancamento.getStatus()
+        );
+
+        assertNull(lancamento.getValorPago());
+        assertNull(lancamento.getDataPagamento());
+
+        verify(lancamentoRepository, never()).saveAndFlush(any());
+    }
+
+
+
 }

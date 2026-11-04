@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.math.BigDecimal;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -74,12 +75,15 @@ public class LancamentoService {
     @Transactional
     public LancamentoResponseDTO registrarPagamento(
             Long lancamentoId,
+            Long versaoEsperada,
             PagamentoRequestDTO request
     ) {
         Lancamento lancamento = lancamentoRepository.findById(lancamentoId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Lançamento não encontrado: " + lancamentoId
                 ));
+
+        validarVersao(lancamento, versaoEsperada);
 
         if (lancamento.getStatus() != Lancamento.StatusLancamento.PENDENTE) {
             throw new BusinessConflictException(
@@ -100,7 +104,7 @@ public class LancamentoService {
         lancamento.setDataPagamento(request.dataPagamento());
         lancamento.setStatus(Lancamento.StatusLancamento.PAGO);
 
-        Lancamento salvo = lancamentoRepository.save(lancamento);
+        Lancamento salvo = lancamentoRepository.saveAndFlush(lancamento);
 
         return LancamentoResponseDTO.fromEntity(salvo);
     }
@@ -319,6 +323,7 @@ public class LancamentoService {
     @Transactional
     public LancamentoResponseDTO atualizar(
             Long id,
+            Long versaoEsperada,
             AtualizarLancamentoRequestDTO request
     ) {
         if (request == null) {
@@ -331,6 +336,8 @@ public class LancamentoService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Lançamento não encontrado: " + id
                 ));
+
+        validarVersao(lancamento, versaoEsperada);
 
         if (lancamento.getStatus() != Lancamento.StatusLancamento.PENDENTE) {
             throw new BusinessConflictException(
@@ -382,18 +389,20 @@ public class LancamentoService {
             lancamento.setObservacoes(request.observacoes());
         }
 
-        Lancamento salvo = lancamentoRepository.save(lancamento);
+        Lancamento salvo = lancamentoRepository.saveAndFlush(lancamento);
 
         return LancamentoResponseDTO.fromEntity(salvo);
     }
 
 
     @Transactional
-    public LancamentoResponseDTO cancelar(Long id) {
+    public LancamentoResponseDTO cancelar(Long id, Long versaoEsperada) {
         Lancamento lancamento = lancamentoRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Lançamento não encontrado: " + id
                 ));
+
+        validarVersao(lancamento, versaoEsperada);
 
         if (lancamento.getStatus() != Lancamento.StatusLancamento.PENDENTE) {
             throw new BusinessConflictException(
@@ -403,9 +412,26 @@ public class LancamentoService {
 
         lancamento.setStatus(Lancamento.StatusLancamento.CANCELADO);
 
-        Lancamento salvo = lancamentoRepository.save(lancamento);
+        Lancamento salvo = lancamentoRepository.saveAndFlush(lancamento);
 
         return LancamentoResponseDTO.fromEntity(salvo);
+    }
+
+    private void validarVersao(
+            Lancamento lancamento,
+            Long versaoEsperada
+    ) {
+        if (versaoEsperada == null || versaoEsperada < 0) {
+            throw new IllegalArgumentException(
+                    "A versão informada é inválida"
+            );
+        }
+
+        if (!Objects.equals(lancamento.getVersion(), versaoEsperada)) {
+            throw new BusinessConflictException(
+                    "Este lançamento foi alterado. Atualize os dados e tente novamente."
+            );
+        }
     }
 
 

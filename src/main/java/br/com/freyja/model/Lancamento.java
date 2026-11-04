@@ -52,5 +52,9 @@ public class Lancamento {
     @Column(columnDefinition = "text")
     private String observacoes;
 
+    @Version
+    @Column(name = "version", nullable = false)
+    private Long version;
+
     public enum StatusLancamento { PENDENTE, PAGO, CANCELADO }
 }

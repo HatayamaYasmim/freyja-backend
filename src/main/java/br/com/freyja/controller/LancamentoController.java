@@ -70,10 +70,15 @@ public class LancamentoController {
     @PatchMapping("/{id}/pagamento")
     public ResponseEntity<LancamentoResponseDTO> registrarPagamento(
             @PathVariable @Positive Long id,
+            @RequestHeader("If-Match") Long versaoEsperada,
             @Valid @RequestBody PagamentoRequestDTO request
     ) {
         return ResponseEntity.ok(
-                lancamentoService.registrarPagamento(id, request)
+                lancamentoService.registrarPagamento(
+                        id,
+                        versaoEsperada,
+                        request
+                )
         );
     }
 
@@ -120,22 +125,30 @@ public class LancamentoController {
     }
 
 
+
     @PatchMapping("/{id}")
     public ResponseEntity<LancamentoResponseDTO> atualizar(
             @PathVariable @Positive Long id,
+            @RequestHeader("If-Match") Long versaoEsperada,
             @Valid @RequestBody AtualizarLancamentoRequestDTO request
     ) {
         return ResponseEntity.ok(
-                lancamentoService.atualizar(id, request)
+                lancamentoService.atualizar(
+                        id,
+                        versaoEsperada,
+                        request
+                )
         );
     }
 
+
     @PatchMapping("/{id}/cancelar")
     public ResponseEntity<LancamentoResponseDTO> cancelar(
-            @PathVariable @Positive Long id
+            @PathVariable @Positive Long id,
+            @RequestHeader("If-Match") Long versaoEsperada
     ) {
         return ResponseEntity.ok(
-                lancamentoService.cancelar(id)
+                lancamentoService.cancelar(id, versaoEsperada)
         );
     }
 

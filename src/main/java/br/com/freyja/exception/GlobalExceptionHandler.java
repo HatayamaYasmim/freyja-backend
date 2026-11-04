@@ -1,6 +1,8 @@
 
 package br.com.freyja.exception;
 
+import jakarta.persistence.OptimisticLockException;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -58,4 +60,20 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(status).body(problem);
     }
+
+
+    @ExceptionHandler({
+            OptimisticLockingFailureException.class,
+            OptimisticLockException.class
+    })
+    public ResponseEntity<ProblemDetail> optimisticLock(
+            Exception ex
+    ) {
+        return erro(
+                HttpStatus.CONFLICT,
+                "Este lançamento foi alterado por outra operação. " +
+                        "Atualize os dados e tente novamente."
+        );
+    }
+
 }

@@ -18,7 +18,8 @@ public record LancamentoResponseDTO(
         BigDecimal valorPago,
         LocalDate dataPagamento,
         String status,
-        String observacoes
+        String observacoes,
+        Long version
 ) {
     public static LancamentoResponseDTO fromEntity(Lancamento lancamento) {
         return new LancamentoResponseDTO(
@@ -35,7 +36,8 @@ public record LancamentoResponseDTO(
                 lancamento.getValorPago(),
                 lancamento.getDataPagamento(),
                 lancamento.getStatus().name(),
-                lancamento.getObservacoes()
+                lancamento.getObservacoes(),
+                lancamento.getVersion()
         );
     }
 }

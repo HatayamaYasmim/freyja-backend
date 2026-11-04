@@ -1,4 +1,4 @@
-package br.com.freyja.dto;
+package br.com.freyja.dto.cartao;
 
 import br.com.freyja.enums.OrigemImportacao;
 import lombok.Data;

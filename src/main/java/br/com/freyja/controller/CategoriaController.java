@@ -1,6 +1,6 @@
 package br.com.freyja.controller;
 
-import br.com.freyja.dto.CategoriaDTO;
+import br.com.freyja.dto.categoria.CategoriaDTO;
 import br.com.freyja.model.Categoria;
 import br.com.freyja.service.CategoriaService;
 import jakarta.validation.Valid;

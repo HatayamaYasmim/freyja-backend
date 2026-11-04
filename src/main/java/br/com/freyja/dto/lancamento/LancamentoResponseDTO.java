@@ -1,5 +1,5 @@
 
-package br.com.freyja.dto;
+package br.com.freyja.dto.lancamento;
 
 import br.com.freyja.model.Lancamento;
 

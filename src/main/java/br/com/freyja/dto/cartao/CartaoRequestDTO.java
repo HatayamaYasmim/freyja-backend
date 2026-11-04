@@ -24,7 +24,7 @@
 //        String proprietario
 //
 //) {}
-package br.com.freyja.dto;
+package br.com.freyja.dto.cartao;
 
 import jakarta.validation.constraints.*;
 import java.math.BigDecimal;

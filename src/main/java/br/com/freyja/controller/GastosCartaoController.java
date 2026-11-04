@@ -1,8 +1,7 @@
 package br.com.freyja.controller;
 
-import br.com.freyja.dto.GastoCartaoDTO;
-import br.com.freyja.dto.GastoCartaoPreviewDTO;
-import br.com.freyja.dto.GastoCartaoResponseDTO;
+import br.com.freyja.dto.cartao.GastoCartaoDTO;
+import br.com.freyja.dto.cartao.GastoCartaoResponseDTO;
 import br.com.freyja.model.GastoCartao;
 import br.com.freyja.service.GastoCartaoService;
 import jakarta.validation.Valid;

@@ -1,4 +1,4 @@
-package br.com.freyja.dto;
+package br.com.freyja.dto.cartao;
 
 import jakarta.validation.constraints.*;
 import lombok.Data;

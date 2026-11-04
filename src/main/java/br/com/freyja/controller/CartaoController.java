@@ -1,8 +1,8 @@
 package br.com.freyja.controller;
 
-import br.com.freyja.dto.CartaoListagemResponseDTO;
-import br.com.freyja.dto.CartaoRequestDTO;
-import br.com.freyja.dto.CartaoResponseDTO;
+import br.com.freyja.dto.cartao.CartaoListagemResponseDTO;
+import br.com.freyja.dto.cartao.CartaoRequestDTO;
+import br.com.freyja.dto.cartao.CartaoResponseDTO;
 import br.com.freyja.model.Cartao;
 import br.com.freyja.service.CartaoService;
 import jakarta.validation.Valid;

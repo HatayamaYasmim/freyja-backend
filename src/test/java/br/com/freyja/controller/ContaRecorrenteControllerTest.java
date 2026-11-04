@@ -1,7 +1,7 @@
 
 package br.com.freyja.controller;
 
-import br.com.freyja.dto.ContaRecorrenteResponseDTO;
+import br.com.freyja.dto.contarecorrente.ContaRecorrenteResponseDTO;
 import br.com.freyja.service.ContaRecorrenteService;
 
 import org.junit.jupiter.api.BeforeEach;

@@ -1,6 +1,6 @@
 package br.com.freyja.controller;
 
-import br.com.freyja.dto.GrupoDTO;
+import br.com.freyja.dto.grupo.GrupoDTO;
 import br.com.freyja.model.Grupo;
 import br.com.freyja.service.GrupoService;
 import jakarta.validation.Valid;

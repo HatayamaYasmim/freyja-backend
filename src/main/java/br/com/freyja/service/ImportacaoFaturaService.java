@@ -1,6 +1,6 @@
 package br.com.freyja.service;
 
-import br.com.freyja.dto.GastoCartaoPreviewDTO;
+import br.com.freyja.dto.cartao.GastoCartaoPreviewDTO;
 import br.com.freyja.enums.OrigemImportacao;
 import br.com.freyja.repository.GastosCartaoRepository;
 import org.apache.pdfbox.Loader;

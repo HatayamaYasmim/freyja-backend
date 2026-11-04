@@ -1,6 +1,7 @@
 
 package br.com.freyja.service;
 
+import br.com.freyja.exception.BusinessConflictException;
 import br.com.freyja.model.ContaRecorrente;
 import br.com.freyja.model.Lancamento;
 import br.com.freyja.repository.ContaRecorrenteRepository;
@@ -55,8 +56,8 @@ public class GeracaoLancamentosService {
                 );
 
         if (!conta.isAtiva()) {
-            throw new IllegalStateException(
-                    "Não é possível gerar lançamentos de conta inativa"
+            throw new BusinessConflictException(
+                    "Não é possível gerar lançamentos de uma conta recorrente desativada"
             );
         }
 

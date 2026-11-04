@@ -1,5 +1,5 @@
 
-package br.com.freyja.dto;
+package br.com.freyja.dto.relatorio;
 
 import java.math.BigDecimal;
 import java.util.List;

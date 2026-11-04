@@ -1,4 +1,4 @@
-package br.com.freyja.dto;
+package br.com.freyja.dto.cartao;
 
 import java.math.BigDecimal;
 

@@ -1,6 +1,6 @@
 package br.com.freyja.service;
 
-import br.com.freyja.dto.CartaoRequestDTO;
+import br.com.freyja.dto.cartao.CartaoRequestDTO;
 import br.com.freyja.model.Cartao;
 import br.com.freyja.repository.CartaoRepository;
 import jakarta.transaction.Transactional;

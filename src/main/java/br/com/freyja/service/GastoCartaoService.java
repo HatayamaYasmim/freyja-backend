@@ -1,8 +1,8 @@
 package br.com.freyja.service;
 
-import br.com.freyja.dto.GastoCartaoDTO;
-import br.com.freyja.dto.GastoCartaoPreviewDTO;
-import br.com.freyja.dto.GastoCartaoResponseDTO;
+import br.com.freyja.dto.cartao.GastoCartaoDTO;
+import br.com.freyja.dto.cartao.GastoCartaoPreviewDTO;
+import br.com.freyja.dto.cartao.GastoCartaoResponseDTO;
 import br.com.freyja.enums.OrigemImportacao;
 import br.com.freyja.model.Cartao;
 import br.com.freyja.model.Categoria;

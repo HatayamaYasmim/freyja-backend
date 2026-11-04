@@ -1,8 +1,8 @@
 
 package br.com.freyja.service;
 
-import br.com.freyja.dto.AtualizarLancamentoRequestDTO;
-import br.com.freyja.dto.PagamentoRequestDTO;
+import br.com.freyja.dto.lancamento.AtualizarLancamentoRequestDTO;
+import br.com.freyja.dto.lancamento.PagamentoRequestDTO;
 import br.com.freyja.exception.BusinessConflictException;
 import br.com.freyja.model.Categoria;
 import br.com.freyja.model.Grupo;

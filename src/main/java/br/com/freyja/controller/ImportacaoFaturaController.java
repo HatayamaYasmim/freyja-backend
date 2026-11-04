@@ -1,8 +1,7 @@
 package br.com.freyja.controller;
 
-import br.com.freyja.dto.GastoCartaoPreviewDTO;
+import br.com.freyja.dto.cartao.GastoCartaoPreviewDTO;
 import br.com.freyja.enums.OrigemImportacao;
-import br.com.freyja.model.GastoCartao;
 import br.com.freyja.service.GastoCartaoService;
 import br.com.freyja.service.ImportacaoFaturaService;
 import org.springframework.http.ResponseEntity;

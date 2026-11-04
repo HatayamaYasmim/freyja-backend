@@ -1,4 +1,4 @@
-package br.com.freyja.dto;
+package br.com.freyja.dto.contarecorrente;
 
 import jakarta.validation.constraints.*;
 

@@ -1,5 +1,6 @@
 package br.com.freyja.service;
 
+import br.com.freyja.exception.BusinessConflictException;
 import br.com.freyja.model.Categoria;
 import br.com.freyja.model.ContaRecorrente;
 import br.com.freyja.model.Grupo;
@@ -189,15 +190,15 @@ public class GeracaoLancamentosServiceTest {
                 .thenReturn(Optional.of(conta));
 
         assertThrows(
-                IllegalStateException.class,
+                BusinessConflictException.class,
                 () -> service.gerar(
                         1L,
-                        YearMonth.of(2026, 10),
-                        YearMonth.of(2026, 12)
+                        YearMonth.of(2027, 1),
+                        YearMonth.of(2027, 3)
                 )
         );
 
-        verifyNoInteractions(repository);
+        verify(repository, never()).saveAll(any());
     }
 
     @Test
@@ -278,6 +279,39 @@ public class GeracaoLancamentosServiceTest {
 
         verifyNoInteractions(contaRepository, repository);
     }
+
+
+    @Test
+    void deveGerarNoMesDeEncerramento() {
+        conta.setDataFim(LocalDate.of(2027, 2, 15));
+
+        when(contaRepository.findById(1L))
+                .thenReturn(Optional.of(conta));
+
+        when(repository.saveAll(anyList()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        List<Lancamento> resultado = service.gerar(
+                1L,
+                YearMonth.of(2027, 1),
+                YearMonth.of(2027, 4)
+        );
+
+        assertEquals(2, resultado.size());
+
+        assertEquals(
+                LocalDate.of(2027, 1, 1),
+                resultado.get(0).getCompetencia()
+        );
+
+        assertEquals(
+                LocalDate.of(2027, 2, 1),
+                resultado.get(1).getCompetencia()
+        );
+
+        verify(repository).saveAll(anyList());
+    }
+
 
 
 }

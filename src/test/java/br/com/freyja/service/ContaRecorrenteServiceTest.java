@@ -1,7 +1,11 @@
 package br.com.freyja.service;
 
-import br.com.freyja.dto.ContaRecorrenteRequestDTO;
-import br.com.freyja.dto.ContaRecorrenteResponseDTO;
+import br.com.freyja.dto.contarecorrente.AtualizarContaRecorrenteRequestDTO;
+import br.com.freyja.dto.contarecorrente.ContaRecorrenteRequestDTO;
+import br.com.freyja.dto.contarecorrente.ContaRecorrenteResponseDTO;
+import br.com.freyja.dto.contarecorrente.EncerrarContaRecorrenteRequestDTO;
+import br.com.freyja.exception.BusinessConflictException;
+import br.com.freyja.exception.ResourceNotFoundException;
 import br.com.freyja.model.Categoria;
 import br.com.freyja.model.ContaRecorrente;
 import br.com.freyja.model.Grupo;
@@ -239,5 +243,211 @@ class ContaRecorrenteServiceTest {
 
         verify(repository).findByGrupo_Id(1L);
     }
+
+
+    @Test
+    void deveAtualizarContaRecorrente() {
+        ContaRecorrente conta = criarEntidade();
+
+        AtualizarContaRecorrenteRequestDTO request =
+                new AtualizarContaRecorrenteRequestDTO(
+                        "Internet atualizada",
+                        null,
+                        new BigDecimal("150.00"),
+                        15
+                );
+
+        when(repository.findById(1L))
+                .thenReturn(Optional.of(conta));
+
+        when(repository.save(any(ContaRecorrente.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        ContaRecorrenteResponseDTO resultado =
+                service.atualizar(1L, request);
+
+        assertEquals("Internet atualizada", resultado.descricao());
+        assertEquals(new BigDecimal("150.00"), resultado.valorPrevisto());
+        assertEquals(15, resultado.diaVencimento());
+
+        // Campos não enviados devem permanecer inalterados.
+        assertEquals(2L, resultado.categoriaId());
+        assertEquals("MENSAL", resultado.periodicidade());
+        assertEquals(LocalDate.of(2026, 10, 1), resultado.dataInicio());
+        assertTrue(resultado.ativa());
+
+        verify(repository).save(conta);
+    }
+
+
+    @Test
+    void naoDeveAtualizarComDescricaoVazia() {
+        ContaRecorrente conta = criarEntidade();
+
+        AtualizarContaRecorrenteRequestDTO request =
+                new AtualizarContaRecorrenteRequestDTO(
+                        "   ",
+                        null,
+                        null,
+                        null
+                );
+
+        when(repository.findById(1L))
+                .thenReturn(Optional.of(conta));
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> service.atualizar(1L, request)
+        );
+
+        assertEquals("Internet", conta.getDescricao());
+
+        verify(repository, never()).save(any());
+    }
+
+
+    @Test
+    void naoDeveAtualizarComCategoriaInexistente() {
+        ContaRecorrente conta = criarEntidade();
+
+        AtualizarContaRecorrenteRequestDTO request =
+                new AtualizarContaRecorrenteRequestDTO(
+                        null,
+                        999L,
+                        null,
+                        null
+                );
+
+        when(repository.findById(1L))
+                .thenReturn(Optional.of(conta));
+
+        when(categoriaRepository.findById(999L))
+                .thenReturn(Optional.empty());
+
+        assertThrows(
+                ResourceNotFoundException.class,
+                () -> service.atualizar(1L, request)
+        );
+
+        assertEquals(2L, conta.getCategoria().getId());
+
+        verify(repository, never()).save(any());
+    }
+
+
+    @Test
+    void deveDesativarContaRecorrente() {
+        ContaRecorrente conta = criarEntidade();
+
+        when(repository.findById(1L))
+                .thenReturn(Optional.of(conta));
+
+        when(repository.save(any(ContaRecorrente.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        ContaRecorrenteResponseDTO resultado =
+                service.desativar(1L);
+
+        assertFalse(resultado.ativa());
+        assertFalse(conta.isAtiva());
+
+        verify(repository).save(conta);
+    }
+
+    @Test
+    void naoDeveDesativarContaJaInativa() {
+        ContaRecorrente conta = criarEntidade();
+        conta.setAtiva(false);
+
+        when(repository.findById(1L))
+                .thenReturn(Optional.of(conta));
+
+        assertThrows(
+                BusinessConflictException.class,
+                () -> service.desativar(1L)
+        );
+
+        verify(repository, never()).save(any());
+    }
+
+
+    @Test
+    void deveEncerrarContaRecorrente() {
+        ContaRecorrente conta = criarEntidade();
+
+        EncerrarContaRecorrenteRequestDTO request =
+                new EncerrarContaRecorrenteRequestDTO(
+                        LocalDate.of(2027, 2, 28)
+                );
+
+        when(repository.findById(1L))
+                .thenReturn(Optional.of(conta));
+
+        when(repository.save(any(ContaRecorrente.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        ContaRecorrenteResponseDTO resultado =
+                service.encerrar(1L, request);
+
+        assertEquals(
+                LocalDate.of(2027, 2, 28),
+                resultado.dataFim()
+        );
+
+        assertTrue(resultado.ativa());
+
+        verify(repository).save(conta);
+    }
+
+
+    @Test
+    void naoDeveEncerrarComDataAnteriorAoInicio() {
+        ContaRecorrente conta = criarEntidade();
+
+        EncerrarContaRecorrenteRequestDTO request =
+                new EncerrarContaRecorrenteRequestDTO(
+                        LocalDate.of(2026, 9, 30)
+                );
+
+        when(repository.findById(1L))
+                .thenReturn(Optional.of(conta));
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> service.encerrar(1L, request)
+        );
+
+        assertNull(conta.getDataFim());
+
+        verify(repository, never()).save(any());
+    }
+
+
+    @Test
+    void naoDeveEncerrarContaJaEncerrada() {
+        ContaRecorrente conta = criarEntidade();
+        conta.setDataFim(LocalDate.of(2027, 2, 28));
+
+        EncerrarContaRecorrenteRequestDTO request =
+                new EncerrarContaRecorrenteRequestDTO(
+                        LocalDate.of(2027, 3, 31)
+                );
+
+        when(repository.findById(1L))
+                .thenReturn(Optional.of(conta));
+
+        assertThrows(
+                BusinessConflictException.class,
+                () -> service.encerrar(1L, request)
+        );
+
+        assertEquals(
+                LocalDate.of(2027, 2, 28),
+                conta.getDataFim()
+        );
+
+        verify(repository, never()).save(any());
+    }
+
 
 }

@@ -70,13 +70,13 @@ public class LancamentoController {
     @PatchMapping("/{id}/pagamento")
     public ResponseEntity<LancamentoResponseDTO> registrarPagamento(
             @PathVariable @Positive Long id,
-            @RequestHeader("If-Match") Long versaoEsperada,
+            @RequestHeader("If-Match") String ifMatch,
             @Valid @RequestBody PagamentoRequestDTO request
     ) {
-        return ResponseEntity.ok(
+        return respostaComEtag(
                 lancamentoService.registrarPagamento(
                         id,
-                        versaoEsperada,
+                        extrairVersao(ifMatch),
                         request
                 )
         );
@@ -129,13 +129,13 @@ public class LancamentoController {
     @PatchMapping("/{id}")
     public ResponseEntity<LancamentoResponseDTO> atualizar(
             @PathVariable @Positive Long id,
-            @RequestHeader("If-Match") Long versaoEsperada,
+            @RequestHeader("If-Match") String ifMatch,
             @Valid @RequestBody AtualizarLancamentoRequestDTO request
     ) {
-        return ResponseEntity.ok(
+        return respostaComEtag(
                 lancamentoService.atualizar(
                         id,
-                        versaoEsperada,
+                        extrairVersao(ifMatch),
                         request
                 )
         );
@@ -145,13 +145,36 @@ public class LancamentoController {
     @PatchMapping("/{id}/cancelar")
     public ResponseEntity<LancamentoResponseDTO> cancelar(
             @PathVariable @Positive Long id,
-            @RequestHeader("If-Match") Long versaoEsperada
+            @RequestHeader("If-Match") String ifMatch
     ) {
-        return ResponseEntity.ok(
-                lancamentoService.cancelar(id, versaoEsperada)
+        return respostaComEtag(
+                lancamentoService.cancelar(id, extrairVersao(ifMatch))
         );
     }
 
+    private ResponseEntity<LancamentoResponseDTO> respostaComEtag(
+            LancamentoResponseDTO response
+    ) {
+        return ResponseEntity.ok()
+                .eTag(String.valueOf(response.version()))
+                .body(response);
+    }
+
+    private Long extrairVersao(String ifMatch) {
+        if (ifMatch == null || !ifMatch.matches("\"(0|[1-9][0-9]*)\"")) {
+            throw new IllegalArgumentException(
+                    "If-Match inválido. Informe a versão entre aspas, por exemplo: \"3\""
+            );
+        }
+
+        try {
+            return Long.parseLong(ifMatch.substring(1, ifMatch.length() - 1));
+        } catch (NumberFormatException exception) {
+            throw new IllegalArgumentException(
+                    "A versão informada excede o limite permitido"
+            );
+        }
+    }
 
 
 }

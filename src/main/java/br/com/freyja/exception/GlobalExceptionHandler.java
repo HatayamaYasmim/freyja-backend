@@ -49,6 +49,26 @@ public class GlobalExceptionHandler {
         return erro(HttpStatus.BAD_REQUEST, mensagem);
     }
 
+    @ExceptionHandler({
+            OptimisticLockingFailureException.class,
+            OptimisticLockException.class
+    })
+    public ResponseEntity<ProblemDetail> tratarConflitoConcorrencia(
+            Exception exception
+    ) {
+        ProblemDetail problema = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT,
+                "Este lançamento foi modificado por outra operação. " +
+                        "Atualize os dados antes de tentar novamente."
+        );
+
+        problema.setTitle("Conflito de concorrência");
+
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(problema);
+    }
+
     private ResponseEntity<ProblemDetail> erro(
             HttpStatus status,
             String mensagem
@@ -60,20 +80,4 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(status).body(problem);
     }
-
-
-    @ExceptionHandler({
-            OptimisticLockingFailureException.class,
-            OptimisticLockException.class
-    })
-    public ResponseEntity<ProblemDetail> optimisticLock(
-            Exception ex
-    ) {
-        return erro(
-                HttpStatus.CONFLICT,
-                "Este lançamento foi alterado por outra operação. " +
-                        "Atualize os dados e tente novamente."
-        );
-    }
-
 }

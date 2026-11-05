@@ -4,11 +4,14 @@ package br.com.freyja.controller;
 import br.com.freyja.dto.filtro.LancamentoFiltroDTO;
 import br.com.freyja.dto.filtro.PeriodoMensalFiltroDTO;
 import br.com.freyja.dto.lancamento.*;
+import br.com.freyja.dto.pagamento.RegistrarPagamentoRequestDTO;
 import br.com.freyja.dto.relatorio.ResumoAnualDTO;
 import br.com.freyja.dto.relatorio.ResumoFinanceiroDTO;
 import br.com.freyja.service.GeracaoLancamentosService;
 import br.com.freyja.service.LancamentoService;
 
+import br.com.freyja.service.PagamentoService;
+import br.com.freyja.service.RelatorioFinanceiroService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 
@@ -26,13 +29,19 @@ public class LancamentoController {
 
     private final GeracaoLancamentosService geracaoService;
     private final LancamentoService lancamentoService;
+    private final PagamentoService pagamentoService;
+    private final RelatorioFinanceiroService relatorioFinanceiroService;
 
     public LancamentoController(
             GeracaoLancamentosService geracaoService,
-            LancamentoService lancamentoService
+            LancamentoService lancamentoService,
+            PagamentoService pagamentoService,
+            RelatorioFinanceiroService relatorioFinanceiroService
     ) {
         this.geracaoService = geracaoService;
         this.lancamentoService = lancamentoService;
+        this.pagamentoService = pagamentoService;
+        this.relatorioFinanceiroService = relatorioFinanceiroService;
     }
 
     @PostMapping("/gerar")
@@ -74,7 +83,7 @@ public class LancamentoController {
             @Valid @RequestBody PagamentoRequestDTO request
     ) {
         return respostaComEtag(
-                lancamentoService.registrarPagamento(
+                pagamentoService.registrarPagamento(
                         id,
                         extrairVersao(ifMatch),
                         request
@@ -89,7 +98,7 @@ public class LancamentoController {
             @Valid @ModelAttribute PeriodoMensalFiltroDTO filtro
     ) {
         return ResponseEntity.ok(
-                lancamentoService.obterResumo(
+                relatorioFinanceiroService.obterResumo(
                         grupoId,
                         filtro.mes()
                 )
@@ -120,7 +129,7 @@ public class LancamentoController {
             @RequestParam Integer ano
     ) {
         return ResponseEntity.ok(
-                lancamentoService.obterResumoAnual(grupoId, ano)
+                relatorioFinanceiroService.obterResumoAnual(grupoId, ano)
         );
     }
 
@@ -175,6 +184,23 @@ public class LancamentoController {
             );
         }
     }
+
+
+    @PostMapping("/{id}/pagamentos")
+    public ResponseEntity<LancamentoResponseDTO> registrarPagamentoParcial(
+            @PathVariable @Positive Long id,
+            @RequestHeader("If-Match") String ifMatch,
+            @Valid @RequestBody RegistrarPagamentoRequestDTO request
+    ) {
+        return respostaComEtag(
+                pagamentoService.registrarPagamentoParcial(
+                        id,
+                        extrairVersao(ifMatch),
+                        request
+                )
+        );
+    }
+
 
 
 }

@@ -4,9 +4,6 @@ package br.com.freyja.service;
 import br.com.freyja.dto.lancamento.AtualizarLancamentoRequestDTO;
 import br.com.freyja.dto.lancamento.LancamentoAvulsoRequestDTO;
 import br.com.freyja.dto.lancamento.LancamentoResponseDTO;
-import br.com.freyja.dto.lancamento.PagamentoRequestDTO;
-import br.com.freyja.dto.relatorio.ResumoAnualDTO;
-import br.com.freyja.dto.relatorio.ResumoFinanceiroDTO;
 import br.com.freyja.exception.BusinessConflictException;
 import br.com.freyja.exception.ResourceNotFoundException;
 import br.com.freyja.model.Categoria;
@@ -19,17 +16,13 @@ import br.com.freyja.repository.LancamentoRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.time.YearMonth;
-import java.util.ArrayList;
 import java.util.List;
-import java.math.BigDecimal;
-import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 @Service
 public class LancamentoService {
+    // Cadastro, edição, cancelamento e listagem de lançamentos.
 
     private final LancamentoRepository lancamentoRepository;
     private final GrupoRepository grupoRepository;
@@ -51,6 +44,7 @@ public class LancamentoService {
             YearMonth mes,
             Long categoriaId,
             Lancamento.StatusLancamento status
+
     ) {
         validarFiltro(grupoId, mes);
 
@@ -75,63 +69,6 @@ public class LancamentoService {
                 .map(LancamentoResponseDTO::fromEntity)
                 .toList();
     }
-
-
-    @Transactional
-    public LancamentoResponseDTO registrarPagamento(
-            Long lancamentoId,
-            Long versaoEsperada,
-            PagamentoRequestDTO request
-    ) {
-        Lancamento lancamento = lancamentoRepository.findById(lancamentoId)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Lançamento não encontrado: " + lancamentoId
-                ));
-
-        validarVersao(lancamento, versaoEsperada);
-
-        if (lancamento.getStatus() != Lancamento.StatusLancamento.PENDENTE) {
-            throw new BusinessConflictException(
-                    "Somente lançamentos pendentes podem ser pagos"
-            );
-        }
-
-        if (request == null
-                || request.valorPago() == null
-                || request.valorPago().signum() <= 0
-                || request.dataPagamento() == null) {
-            throw new IllegalArgumentException(
-                    "Informe um valor positivo e a data do pagamento"
-            );
-        }
-
-        lancamento.setValorPago(request.valorPago());
-        lancamento.setDataPagamento(request.dataPagamento());
-        lancamento.setStatus(Lancamento.StatusLancamento.PAGO);
-
-        Lancamento salvo = lancamentoRepository.saveAndFlush(lancamento);
-
-        return LancamentoResponseDTO.fromEntity(salvo);
-    }
-
-
-    @Transactional(readOnly = true)
-    public ResumoFinanceiroDTO obterResumo(
-            Long grupoId,
-            YearMonth mes
-    ) {
-        validarFiltro(grupoId, mes);
-
-        List<Lancamento> lancamentos = lancamentoRepository
-                .findByGrupo_IdAndCompetenciaBetween(
-                        grupoId,
-                        mes.atDay(1),
-                        mes.atEndOfMonth()
-                );
-
-        return calcularResumo(grupoId, mes, lancamentos);
-    }
-
 
     private void validarFiltro(Long grupoId, YearMonth mes) {
         if (grupoId == null || grupoId <= 0) {
@@ -204,125 +141,6 @@ public class LancamentoService {
         Lancamento salvo = lancamentoRepository.save(lancamento);
 
         return LancamentoResponseDTO.fromEntity(salvo);
-    }
-
-
-    @Transactional(readOnly = true)
-    public ResumoAnualDTO obterResumoAnual(Long grupoId, Integer ano) {
-        if (grupoId == null || grupoId <= 0) {
-            throw new IllegalArgumentException(
-                    "O ID do grupo deve ser positivo"
-            );
-        }
-
-        if (ano == null || ano < 2000 || ano > 2100) {
-            throw new IllegalArgumentException(
-                    "O ano informado é inválido"
-            );
-        }
-
-        List<Lancamento> lancamentos = lancamentoRepository
-                .findByGrupo_IdAndCompetenciaBetween(
-                        grupoId,
-                        LocalDate.of(ano, 1, 1),
-                        LocalDate.of(ano, 12, 31)
-                );
-
-        Map<YearMonth, List<Lancamento>> porMes =
-                lancamentos.stream()
-                        .collect(Collectors.groupingBy(
-                                lancamento -> YearMonth.from(
-                                        lancamento.getCompetencia()
-                                )
-                        ));
-
-        List<ResumoFinanceiroDTO> meses = new ArrayList<>();
-
-        BigDecimal totalPrevisto = BigDecimal.ZERO;
-        BigDecimal totalPago = BigDecimal.ZERO;
-        BigDecimal totalPendente = BigDecimal.ZERO;
-
-        for (int numeroMes = 1; numeroMes <= 12; numeroMes++) {
-            YearMonth mes = YearMonth.of(ano, numeroMes);
-
-            List<Lancamento> lancamentosDoMes =
-                    porMes.getOrDefault(mes, List.of());
-
-            ResumoFinanceiroDTO resumo =
-                    calcularResumo(grupoId, mes, lancamentosDoMes);
-
-            meses.add(resumo);
-
-            totalPrevisto = totalPrevisto.add(resumo.totalPrevisto());
-            totalPago = totalPago.add(resumo.totalPago());
-            totalPendente = totalPendente.add(resumo.totalPendente());
-        }
-
-        return new ResumoAnualDTO(
-                grupoId,
-                ano,
-                totalPrevisto,
-                totalPago,
-                totalPendente,
-                meses
-        );
-    }
-
-
-    private ResumoFinanceiroDTO calcularResumo(
-            Long grupoId,
-            YearMonth mes,
-            List<Lancamento> lancamentos
-    ) {
-        BigDecimal totalPrevisto = BigDecimal.ZERO;
-        BigDecimal totalPago = BigDecimal.ZERO;
-        BigDecimal totalPendente = BigDecimal.ZERO;
-
-        long quantidadePendentes = 0;
-        long quantidadePagos = 0;
-
-        for (Lancamento lancamento : lancamentos) {
-            switch (lancamento.getStatus()) {
-
-                case PENDENTE -> {
-                    totalPrevisto = totalPrevisto.add(
-                            lancamento.getValorPrevisto()
-                    );
-
-                    totalPendente = totalPendente.add(
-                            lancamento.getValorPrevisto()
-                    );
-
-                    quantidadePendentes++;
-                }
-
-                case PAGO -> {
-                    totalPrevisto = totalPrevisto.add(
-                            lancamento.getValorPrevisto()
-                    );
-
-                    totalPago = totalPago.add(
-                            lancamento.getValorPago()
-                    );
-
-                    quantidadePagos++;
-                }
-
-                case CANCELADO -> {
-                    // Não entra nos totais ativos
-                }
-            }
-        }
-
-        return new ResumoFinanceiroDTO(
-                grupoId,
-                mes,
-                totalPrevisto,
-                totalPago,
-                totalPendente,
-                quantidadePendentes,
-                quantidadePagos
-        );
     }
 
     @Transactional
@@ -438,8 +256,4 @@ public class LancamentoService {
             );
         }
     }
-
-
-
-
 }

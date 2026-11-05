@@ -56,5 +56,5 @@ public class Lancamento {
     @Column(name = "version", nullable = false)
     private Long version;
 
-    public enum StatusLancamento { PENDENTE, PAGO, CANCELADO }
+    public enum StatusLancamento { PENDENTE, PARCIAL, PAGO, CANCELADO }
 }

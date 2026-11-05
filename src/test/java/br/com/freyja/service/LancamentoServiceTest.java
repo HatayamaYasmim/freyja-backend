@@ -2,7 +2,6 @@
 package br.com.freyja.service;
 
 import br.com.freyja.dto.lancamento.AtualizarLancamentoRequestDTO;
-import br.com.freyja.dto.lancamento.PagamentoRequestDTO;
 import br.com.freyja.exception.BusinessConflictException;
 import br.com.freyja.model.Categoria;
 import br.com.freyja.model.Grupo;
@@ -191,36 +190,5 @@ class LancamentoServiceTest {
 
         verify(lancamentoRepository, never()).saveAndFlush(any());
     }
-
-
-    @Test
-    void naoDevePagarComVersaoDesatualizada() {
-        lancamento.setVersion(2L);
-
-        PagamentoRequestDTO request = new PagamentoRequestDTO(
-                new BigDecimal("350.00"),
-                LocalDate.of(2026, 11, 15)
-        );
-
-        when(lancamentoRepository.findById(4L))
-                .thenReturn(Optional.of(lancamento));
-
-        assertThrows(
-                BusinessConflictException.class,
-                () -> service.registrarPagamento(4L, 1L, request)
-        );
-
-        assertEquals(
-                Lancamento.StatusLancamento.PENDENTE,
-                lancamento.getStatus()
-        );
-
-        assertNull(lancamento.getValorPago());
-        assertNull(lancamento.getDataPagamento());
-
-        verify(lancamentoRepository, never()).saveAndFlush(any());
-    }
-
-
 
 }

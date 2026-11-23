@@ -4,14 +4,12 @@ package br.com.freyja.controller;
 import br.com.freyja.dto.filtro.LancamentoFiltroDTO;
 import br.com.freyja.dto.filtro.PeriodoMensalFiltroDTO;
 import br.com.freyja.dto.lancamento.*;
+import br.com.freyja.dto.pagamento.PagamentoResponseDTO;
 import br.com.freyja.dto.pagamento.RegistrarPagamentoRequestDTO;
 import br.com.freyja.dto.relatorio.ResumoAnualDTO;
 import br.com.freyja.dto.relatorio.ResumoFinanceiroDTO;
-import br.com.freyja.service.GeracaoLancamentosService;
-import br.com.freyja.service.LancamentoService;
+import br.com.freyja.service.*;
 
-import br.com.freyja.service.PagamentoService;
-import br.com.freyja.service.RelatorioFinanceiroService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 
@@ -31,17 +29,19 @@ public class LancamentoController {
     private final LancamentoService lancamentoService;
     private final PagamentoService pagamentoService;
     private final RelatorioFinanceiroService relatorioFinanceiroService;
+    private final PagamentoIdempotenciaFacade pagamentoIdempotenciaFacade;
 
     public LancamentoController(
             GeracaoLancamentosService geracaoService,
             LancamentoService lancamentoService,
             PagamentoService pagamentoService,
-            RelatorioFinanceiroService relatorioFinanceiroService
+            RelatorioFinanceiroService relatorioFinanceiroService, PagamentoIdempotenciaFacade pagamentoIdempotenciaFacade
     ) {
         this.geracaoService = geracaoService;
         this.lancamentoService = lancamentoService;
         this.pagamentoService = pagamentoService;
         this.relatorioFinanceiroService = relatorioFinanceiroService;
+        this.pagamentoIdempotenciaFacade = pagamentoIdempotenciaFacade;
     }
 
     @PostMapping("/gerar")
@@ -186,20 +186,38 @@ public class LancamentoController {
     }
 
 
+
+
     @PostMapping("/{id}/pagamentos")
     public ResponseEntity<LancamentoResponseDTO> registrarPagamentoParcial(
             @PathVariable @Positive Long id,
             @RequestHeader("If-Match") String ifMatch,
+            @RequestHeader(
+                    value = "Idempotency-Key",
+                    required = false
+            ) String idempotencyKey,
             @Valid @RequestBody RegistrarPagamentoRequestDTO request
     ) {
-        return respostaComEtag(
-                pagamentoService.registrarPagamentoParcial(
+        LancamentoResponseDTO response =
+                pagamentoIdempotenciaFacade.registrar(
                         id,
                         extrairVersao(ifMatch),
-                        request
-                )
+                        request,
+                        idempotencyKey
+                );
+
+        return respostaComEtag(response);
+    }
+
+    @GetMapping("/{id}/pagamentos")
+    public ResponseEntity<List<PagamentoResponseDTO>> listarPagamentos(
+            @PathVariable @Positive Long id
+    ) {
+        return ResponseEntity.ok(
+                pagamentoService.listarPagamentos(id)
         );
     }
+
 
 
 

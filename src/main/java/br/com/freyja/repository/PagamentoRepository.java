@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 public interface PagamentoRepository extends JpaRepository<Pagamento, Long> {
 
@@ -18,4 +19,8 @@ public interface PagamentoRepository extends JpaRepository<Pagamento, Long> {
             WHERE p.lancamento.id = :lancamentoId
             """)
     BigDecimal somarPagamentosPorLancamento(@Param("lancamentoId") Long lancamentoId);
+
+    Optional<Pagamento> findByIdempotencyKey(
+            String idempotencyKey
+    );
 }

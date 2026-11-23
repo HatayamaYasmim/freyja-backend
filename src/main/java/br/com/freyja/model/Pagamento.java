@@ -36,4 +36,7 @@ public class Pagamento {
     @Version
     @Column(nullable = false)
     private Long version;
+
+    @Column(name = "idempotency_key", length = 36, updatable = false)
+    private String idempotencyKey;
 }

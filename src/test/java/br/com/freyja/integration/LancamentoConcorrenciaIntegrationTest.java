@@ -1,6 +1,8 @@
 
 package br.com.freyja.integration;
 
+import br.com.freyja.model.Categoria;
+import br.com.freyja.model.Grupo;
 import br.com.freyja.model.Lancamento;
 
 import jakarta.persistence.EntityManager;
@@ -8,24 +10,39 @@ import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.OptimisticLockException;
 
 import org.hibernate.StaleObjectStateException;
-
 import org.junit.jupiter.api.Test;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 
-import java.util.Objects;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@Testcontainers
 @SpringBootTest
 class LancamentoConcorrenciaIntegrationTest {
+
+    @Container
+    @ServiceConnection
+    static PostgreSQLContainer<?> postgres =
+            new PostgreSQLContainer<>("postgres:16-alpine")
+                    .withDatabaseName("freyja_test")
+                    .withUsername("postgres")
+                    .withPassword("postgres");
 
     @Autowired
     private EntityManagerFactory entityManagerFactory;
 
     @Test
     void deveImpedirAtualizacaoConcorrente() {
+
         Long id = criarLancamentoTemporario();
 
         EntityManager emA = entityManagerFactory.createEntityManager();
@@ -38,19 +55,27 @@ class LancamentoConcorrenciaIntegrationTest {
             Lancamento lancamentoA = emA.find(Lancamento.class, id);
             Lancamento lancamentoB = emB.find(Lancamento.class, id);
 
-            assertEquals(
-                    lancamentoA.getVersion(),
-                    lancamentoB.getVersion()
-            );
+            assertNotNull(lancamentoA);
+            assertNotNull(lancamentoB);
 
             Long versaoInicial = lancamentoA.getVersion();
 
-            // A primeira transação altera e confirma.
-            lancamentoA.setObservacoes("Alterado pela transacao A");
+            assertEquals(
+                    versaoInicial,
+                    lancamentoB.getVersion()
+            );
+
+            // Transacao A realiza a primeira alteracao.
+            lancamentoA.setObservacoes(
+                    "Alterado pela transacao A"
+            );
+
             emA.getTransaction().commit();
 
-            // A segunda ainda possui a versão antiga.
-            lancamentoB.setObservacoes("Alterado pela transacao B");
+            // Transacao B continua com a versao antiga.
+            lancamentoB.setObservacoes(
+                    "Alterado pela transacao B"
+            );
 
             RuntimeException exception = assertThrows(
                     RuntimeException.class,
@@ -62,12 +87,15 @@ class LancamentoConcorrenciaIntegrationTest {
                     "Era esperado um conflito de versao"
             );
 
-            // Confirma que a alteração de A foi preservada.
-            try (EntityManager verificacao =
-                         entityManagerFactory.createEntityManager()) {
+            // Verificar os dados persistidos.
+            EntityManager verificacao =
+                    entityManagerFactory.createEntityManager();
 
+            try {
                 Lancamento salvo =
                         verificacao.find(Lancamento.class, id);
+
+                assertNotNull(salvo);
 
                 assertEquals(
                         "Alterado pela transacao A",
@@ -78,6 +106,9 @@ class LancamentoConcorrenciaIntegrationTest {
                         versaoInicial + 1,
                         salvo.getVersion()
                 );
+
+            } finally {
+                verificacao.close();
             }
 
         } finally {
@@ -91,61 +122,56 @@ class LancamentoConcorrenciaIntegrationTest {
 
             emA.close();
             emB.close();
-
-            removerLancamentoTemporario(id);
         }
     }
 
     private Long criarLancamentoTemporario() {
-        EntityManager em = entityManagerFactory.createEntityManager();
+
+        EntityManager em =
+                entityManagerFactory.createEntityManager();
 
         try {
             em.getTransaction().begin();
 
-            Lancamento referencia = em.find(Lancamento.class, 1L);
+            Grupo grupo = new Grupo();
+            grupo.setNome("Casa - teste concorrencia");
+            em.persist(grupo);
 
-            assertNotNull(
-                    referencia,
-                    "O lancamento 1 deve existir no banco de desenvolvimento"
+            Categoria categoria = new Categoria();
+            categoria.setNome("Categoria - teste concorrencia");
+            em.persist(categoria);
+
+            Lancamento lancamento = new Lancamento();
+
+            lancamento.setGrupo(grupo);
+            lancamento.setCategoria(categoria);
+            lancamento.setContaRecorrente(null);
+
+            lancamento.setDescricao(
+                    "Lancamento temporario - concorrencia"
             );
 
-            Lancamento novo = new Lancamento();
-            novo.setGrupo(referencia.getGrupo());
-            novo.setCategoria(referencia.getCategoria());
-            novo.setContaRecorrente(null);
-            novo.setDescricao("Teste de concorrencia");
-            novo.setCompetencia(referencia.getCompetencia());
-            novo.setVencimento(referencia.getVencimento());
-            novo.setValorPrevisto(referencia.getValorPrevisto());
-            novo.setStatus(Lancamento.StatusLancamento.PENDENTE);
+            lancamento.setCompetencia(
+                    LocalDate.of(2026, 11, 1)
+            );
 
-            em.persist(novo);
-            em.getTransaction().commit();
+            lancamento.setVencimento(
+                    LocalDate.of(2026, 11, 20)
+            );
 
-            return novo.getId();
+            lancamento.setValorPrevisto(
+                    new BigDecimal("350.00")
+            );
 
-        } finally {
-            if (em.getTransaction().isActive()) {
-                em.getTransaction().rollback();
-            }
+            lancamento.setStatus(
+                    Lancamento.StatusLancamento.PENDENTE
+            );
 
-            em.close();
-        }
-    }
-
-    private void removerLancamentoTemporario(Long id) {
-        EntityManager em = entityManagerFactory.createEntityManager();
-
-        try {
-            em.getTransaction().begin();
-
-            Lancamento lancamento = em.find(Lancamento.class, id);
-
-            if (lancamento != null) {
-                em.remove(lancamento);
-            }
+            em.persist(lancamento);
 
             em.getTransaction().commit();
+
+            return lancamento.getId();
 
         } finally {
             if (em.getTransaction().isActive()) {
@@ -157,9 +183,11 @@ class LancamentoConcorrenciaIntegrationTest {
     }
 
     private boolean possuiConflitoOtimista(Throwable erro) {
+
         Throwable atual = erro;
 
         while (atual != null) {
+
             if (atual instanceof OptimisticLockException
                     || atual instanceof StaleObjectStateException) {
                 return true;

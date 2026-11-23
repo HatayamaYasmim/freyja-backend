@@ -1,3 +1,4 @@
+
 package br.com.freyja.dto.pagamento;
 
 import br.com.freyja.model.Pagamento;
@@ -11,7 +12,10 @@ public record PagamentoResponseDTO(
         BigDecimal valor,
         LocalDate dataPagamento
 ) {
-    public static PagamentoResponseDTO fromEntiy(Pagamento pagamento) {
+
+    public static PagamentoResponseDTO fromEntity(
+            Pagamento pagamento
+    ) {
         return new PagamentoResponseDTO(
                 pagamento.getId(),
                 pagamento.getLancamento().getId(),

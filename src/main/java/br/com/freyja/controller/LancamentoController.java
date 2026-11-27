@@ -9,6 +9,7 @@ import br.com.freyja.dto.pagamento.RegistrarPagamentoRequestDTO;
 import br.com.freyja.dto.relatorio.ResumoAnualDTO;
 import br.com.freyja.dto.relatorio.ResumoFinanceiroDTO;
 import br.com.freyja.service.*;
+import br.com.freyja.dto.pagamento.EstornarPagamentoRequestDTO;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
@@ -219,6 +220,21 @@ public class LancamentoController {
     }
 
 
-
+    @PostMapping("/{id}/pagamentos/{pagamentoId}/estornar")
+    public ResponseEntity<LancamentoResponseDTO> estornarPagamento(
+            @PathVariable @Positive Long id,
+            @PathVariable @Positive Long pagamentoId,
+            @RequestHeader("If-Match") String ifMatch,
+            @Valid @RequestBody EstornarPagamentoRequestDTO request
+    ) {
+        return respostaComEtag(
+                pagamentoService.estornarPagamento(
+                        id,
+                        pagamentoId,
+                        extrairVersao(ifMatch),
+                        request
+                )
+        );
+    }
 
 }

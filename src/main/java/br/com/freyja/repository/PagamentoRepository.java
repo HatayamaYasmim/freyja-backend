@@ -13,14 +13,21 @@ public interface PagamentoRepository extends JpaRepository<Pagamento, Long> {
 
     List<Pagamento> findByLancamento_IdOrderByDataPagamentoAscIdAsc(Long lancamentoId);
 
+
     @Query("""
-            SELECT COALESCE(SUM(p.valor), 0)
-            FROM Pagamento p
-            WHERE p.lancamento.id = :lancamentoId
-            """)
+    SELECT COALESCE(SUM(p.valor), 0)
+    FROM Pagamento p
+    WHERE p.lancamento.id = :lancamentoId
+      AND p.estornado = false
+    """)
     BigDecimal somarPagamentosPorLancamento(@Param("lancamentoId") Long lancamentoId);
 
     Optional<Pagamento> findByIdempotencyKey(
             String idempotencyKey
+    );
+
+
+    Optional<Pagamento> findFirstByLancamento_IdAndEstornadoFalseOrderByDataPagamentoDescIdDesc(
+            Long lancamentoId
     );
 }

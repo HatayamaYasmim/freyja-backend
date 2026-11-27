@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 
 @Entity
@@ -39,4 +40,14 @@ public class Pagamento {
 
     @Column(name = "idempotency_key", length = 36, updatable = false)
     private String idempotencyKey;
+
+    @Column(name = "estornado", nullable = false)
+    private boolean estornado = false;
+
+    @Column(name = "estornado_em")
+    private Instant estornadoEm;
+
+    @Column(name = "motivo_estorno", length = 500)
+    private String motivoEstorno;
+
 }
